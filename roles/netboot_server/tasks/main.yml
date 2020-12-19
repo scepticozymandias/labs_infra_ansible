@@ -1,0 +1,114 @@
+---
+# tasks file for netboot_server
+  - name: installing packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop: "{{ packages }}"
+    when:
+    - ansible_facts['os_family'] == 'RedHat'
+    - ansible_facts['distribution_major_version'] == '7'
+
+  - name: configuring tftp
+    lineinfile:
+      path: /etc/xinetd.d/tftp
+      regexp: "disable"
+      line: "        disable                 = no"
+
+  - name: start and enable xinetd
+    service: 
+     name: xinetd
+     state: started
+     enabled: yes
+
+  - name: start and enable httpd
+    service: 
+     name: httpd
+     state: started
+     enabled: yes
+
+  - name: Copy files to tftp
+    copy:
+      src: "/usr/share/syslinux/{{ item }}"
+      dest: "/var/lib/tftpboot/{{ item }}"
+      remote_src: yes
+    loop: "{{ remote_files }}"  
+
+  - name: downloading iso image
+    get_url: 
+      url: http://centos.mirror.serveriai.lt/7.9.2009/isos/x86_64/CentOS-7-x86_64-DVD-2009.iso
+      dest: /tmp/Centos7
+      checksum: sha256:e33d7b1ea7a9e2f38c8f693215dd85254c3a4fe446f93f563279715b68d07987
+
+  - name: create a public ftp dir for centos 7
+    file:
+      path: /var/ftp/pub/centos7
+      state: directory
+      recurse: yes
+      mode: '0755'
+
+  - name: create a temp dir for centos7 image
+    file:
+      path: /tmp/mounted/Centos7
+      state: directory
+
+  - name: mount iso
+    command: mount -o loop /tmp/Centos7 /tmp/mounted/Centos7
+    ignore_errors: true
+
+  - name: sync mounted iso to ftp dir
+    synchronize:
+     src: /tmp/mounted/Centos7/
+     dest: /var/ftp/pub/centos7/
+    delegate_to: "{{ inventory_hostname }}"
+
+  - name: create tftp netboot dir for centos 7
+    file:
+      path: /var/lib/tftpboot/networkboot/centos7
+      state: directory
+  
+  - name: copy kernel and initrd to tftp dir
+    copy:
+      src: "/var/ftp/pub/centos7/images/pxeboot/{{ item }}"
+      dest: "/var/lib/tftpboot/networkboot/centos7/{{ item }}"
+      remote_src: yes
+    loop:
+    - vmlinuz
+    - initrd.img
+  
+  - name: create pxeboot config dir
+    file:
+     path: /var/lib/tftpboot/pxelinux.cfg
+     state: directory
+
+  - name: create kickstart web dir
+    file:
+     path: /var/www/html/inst
+     state: directory
+
+  - name: copy default pxe boot config
+    template:
+      src: templates/default.j2
+      dest: /var/lib/tftpboot/pxelinux.cfg/default
+
+  - name: copy kickstart file centos7
+    template:
+      src: templates/kickstart7.cfg.j2
+      dest: /var/www/html/inst/ks7.cfg
+
+  - name: start and enable vsftpd
+    service: 
+     name: vsftpd
+     state: started
+     enabled: yes
+
+  - name: configure firewall services
+    firewalld:
+      service: "{{ item }}"
+      permanent: yes
+      state: enabled
+      immediate: true
+    loop:
+    - http
+    - tftp 
+    - ftp

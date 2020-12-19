@@ -1,0 +1,23 @@
+---
+# vars file for netboot_server
+packages:
+- syslinux
+- xinetd
+- tftp-server
+- vsftpd
+- wget 
+- vim
+- httpd
+- setroubleshoot-server
+- epel-release
+- p7zip
+- zip
+- rsync
+
+remote_files:
+- pxelinux.0 
+- mboot.c32
+- menu.c32
+- chain.c32
+
+provisioning_server_ip: 192.168.88.50

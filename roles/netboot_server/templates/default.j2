@@ -1,0 +1,14 @@
+default menu.c32
+prompt 0
+timeout 60
+ONTIMEOUT local
+menu title ####CentOS Install from provisioning server####
+label 1
+menu label ^1) install Centos7 x64 from FTP server
+kernel /networkboot/centos7/vmlinuz
+append initrd=/networkboot/centos7/initrd.img inst.repo=ftp://{{ provisioning_server_ip }}/pub/centos7
+label 2
+menu label ^2) install centos 7 from Kickstart file
+kernel /networkboot/centos7/vmlinuz
+append initrd=/networkboot/centos7/initrd.img inst.repo=ftp://{{ provisioning_server_ip }}/pub/centos7 inst.ks=http://{{ provisioning_server_ip }}/inst/ks.cfg
+

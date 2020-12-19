@@ -1,0 +1,6 @@
+---
+- name: bootstrap netboot server
+  become: yes
+  hosts: provisioning
+  roles:
+  - netboot_server
