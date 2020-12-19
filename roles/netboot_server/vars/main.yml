@@ -5,8 +5,7 @@ packages:
 - xinetd
 - tftp-server
 - vsftpd
-- wget 
-- vim
+- wget
 - httpd
 - setroubleshoot-server
 - epel-release
