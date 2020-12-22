@@ -1,0 +1,77 @@
+#version=RHEL8
+# Use graphical install
+#graphical
+text
+
+#repo --name="AppStream" --baseurl=file:///run/install/sources/mount-0000-cdrom/AppStream
+repo --name="AppStream" --baseurl=http://mirror.centos.org/centos/8/AppStream/x86_64/os
+url --url=http://mirror.centos.org/centos/8/BaseOS/x86_64/os/
+
+# Accept Eula
+eula --agreed
+# Reboot when the install is finished.
+reboot
+# Do not configure the X Window System
+skipx
+# System services
+services --enabled="chronyd"
+
+%packages
+@^minimal-environment
+kexec-tools
+bash-completion
+vim
+wget
+curl
+setroubleshoot-server
+rsync
+
+%end
+
+# Keyboard layouts
+keyboard --xlayouts='us'
+# System language
+lang en_US.UTF-8
+
+# Network information
+network  --bootproto=dhcp --device=enp0s3 --ipv6=auto --activate
+network  --hostname=localhost.localdomain
+
+# Run the Setup Agent on first boot
+firstboot --enable
+
+ignoredisk --only-use=sda
+autopart
+# Partition clearing information
+clearpart --none --initlabel
+
+# System timezone
+timezone Europe/Vilnius --isUtc
+
+# Root password
+rootpw --iscrypted $6$CVbvyZggmOIuxqbp$FhpaM/BHJz/N.atOj1LRdVWcgZYO.jX5GdF56gzD2DcrVggM3n3In6svtPNiEAzteb3Vs110DrrHrQSm9xq8y/
+
+%addon com_redhat_kdump --enable --reserve-mb='auto'
+
+%end
+
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+%post --log=/var/log/ks.post02.log
+#!/bin/bash
+set -x
+
+#Install Epel
+/usr/bin/yum install -y epel-release
+
+#Security updates
+echo "Updating packages"
+/usr/bin/yum update -y
+
+#Clean cache
+/usr/bin/yum clean all
+%end
+
